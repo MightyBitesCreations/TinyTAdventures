@@ -23,7 +23,7 @@ body.tz #tz{display:block}body.tz #pad{display:none!important}
 #tz .btns{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));width:190px;height:170px}
 #tz .b{position:absolute;border-radius:50%;border:2px solid #ff5ac8;background:rgba(255,90,200,.28);color:#fff;font:bold 15px monospace;display:flex;align-items:center;justify-content:center;touch-action:none}
 #tz .b.on{background:rgba(255,90,200,.7)}#tz .bj{width:84px;height:84px;right:0;bottom:0}#tz .bh{width:72px;height:72px;right:92px;bottom:10px}#tz .bm{width:54px;height:54px;right:22px;bottom:96px;font-size:13px}
-#tz[data-m=cat] .stick,#tz[data-m=cat] .ghost,#tz[data-m=cat] .btns{display:none!important}#tz[data-m=walk] .half,#tz[data-m=carpet] .half,#tz[data-m=carpet] .btns{display:none}
+#tz[data-m=cat] .stick,#tz[data-m=cat] .ghost,#tz[data-m=cat] .btns{display:none!important}#tz[data-m=walk] .half,#tz[data-m=carpet] .half,#tz[data-m=carpet] .bh,#tz[data-m=carpet] .bm{display:none}#tz[data-m=carpet] .bj{width:96px;height:96px}
 body.l2 #pad button{display:none}body.l2 #pad .l2b{display:inline-block}  /* level 2 on a phone: just GALLOP + JUMP */
 </style></head><body>
 <div id="stage"><canvas id="c"></canvas></div>
@@ -977,13 +977,13 @@ function tzMove(e) { const R = 46, dx = e.clientX - tzO.x, dy = e.clientY - tzO.
 TZ.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); PADUSE = false; const t = e.target, c = t.dataset && t.dataset.c;
   if (t.classList.contains('b') || t.classList.contains('half')) { t.setPointerCapture(e.pointerId); press(c); t.classList.add('on'); tzQuietT = clock; return; }
   if (tzMode === 'cat') return;
-  if (tzId == null && (tzMode === 'carpet' || e.clientX < innerWidth * .55)) { tzId = e.pointerId; TZ.setPointerCapture(e.pointerId); tzO = { x: e.clientX, y: e.clientY };
+  if (tzId == null && (tzMode === 'carpet' ? e.clientX < innerWidth * .7 : e.clientX < innerWidth * .55)) { tzId = e.pointerId; TZ.setPointerCapture(e.pointerId); tzO = { x: e.clientX, y: e.clientY };
     tzStick.style.display = 'block'; tzStick.style.left = e.clientX + 'px'; tzStick.style.top = (e.clientY - TZ.getBoundingClientRect().top) + 'px'; tzKnob.style.transform = ''; tzMove(e); } });
 TZ.addEventListener('pointermove', e => { if (e.pointerId === tzId) { e.preventDefault(); tzMove(e); } });
 ['pointerup', 'pointercancel'].forEach(ev => TZ.addEventListener(ev, e => { if (e.pointerId === tzId) tzStickEnd(); }));
 TZ.querySelectorAll('.b, .half').forEach(b => ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => b.addEventListener(ev, () => { release(b.dataset.c); b.classList.remove('on'); })));
 function tzTick() { const m = tzWantMode(); if (m !== tzMode) { tzMode = m; tzStickEnd(); for (const k in keys) if (keys[k]) release(k);
-    TZ.querySelectorAll('.on').forEach(b => b.classList.remove('on')); document.body.classList.toggle('tz', !!m); if (m) { TZ.dataset.m = m; TZ.classList.remove('quiet'); tzQuietT = clock; } }
+    TZ.querySelectorAll('.on').forEach(b => b.classList.remove('on')); document.body.classList.toggle('tz', !!m); if (m) { TZ.dataset.m = m; TZ.querySelector('.bj').textContent = m === 'carpet' ? 'FIRE' : 'JUMP'; TZ.classList.remove('quiet'); tzQuietT = clock; } }
   if (tzMode === 'cat' && clock - tzQuietT > 4) TZ.classList.add('quiet'); }
 /* ---------- 9. MAIN LOOP (fixed-step physics driven by delta time) ---------- */
 let last = 0, acc = 0;
@@ -1757,13 +1757,14 @@ const L2LV = {                                         // v3: THE TOUR DOWN UNDE
   picks: [[150, 3, 20], [240, 3, 52], [320, 4, 72], [480, 5, 78], [700, 5, 78], [925, 5, 78], [1184, 3, 96], [1434, 3, 96], [1290, 3, 20],
           [1756, 1, 84], [1906, 1, 114], [2056, 1, 144], [2185, 3, 52], [2270, 4, 72], [2450, 5, 78], [2660, 5, 78], [2870, 5, 78],
           [3104, 3, 78], [3274, 3, 110], [3434, 3, 78], [3604, 3, 110], [3780, 6, 84], [3974, 3, 114], [6776, 1, 110], [6956, 1, 150],
-          [7160, 4, 20], [7290, 6, 20],
+          [7160, 4, 20], [7224, 6, 118],
           [4246, 2, 40], [4356, 2, 52], [4476, 3, 62], [4730, 1, 86], [4840, 1, 86], [4950, 1, 86], [5060, 1, 86], [5236, 3, 104], [5420, 2, 48], [5486, 2, 66], [5600, 5, 78], [6060, 3, 20]],
   checkpoint: 1650, checkpoints: [1650, 4545],                     // v32: a second lighter before the mud
   // ---- v32: the longer course (4050-6450) ----
   mud: [[4640, 5090]],                                              // SPILT WINE across the road (a cracked barrel): bounce across on 4 riders' heads - touch the wine and Gus slips
   chain: [[4730, 1], [4840, 3], [4950, 0], [5060, 2]],
-  solidProps: [['l2_bale_s', 4250], ['l2_bale_r', 4360], ['l2_bale_stack', 4470], ['l2_barrel', 5400], ['l2_barrel_pyr', 5470], ['l2_podium', 7280]],
+  solidProps: [['l2_bale_s', 4250], ['l2_bale_r', 4360], ['l2_bale_stack', 4470], ['l2_barrel', 5400], ['l2_barrel_pyr', 5470]],
+  backProps: [['l2_podium', 7300]],                              // the winners' podium: scenery behind the road now, not a wall to crash into
   deco: [['l2_esky', 4110], ['l2_fan', 4150], ['l2_fan', 5620], ['l2_esky', 5790], ['l2_fan', 5830]],
   bfcars: [5200],                                                   // the Willunga team car with Bigfoot on the roof: bounce off his belly
   jspans: [[0], [1], [2]],                                          // every bunting run: the JOUSTING MAMIL spears the span you're on out from under you
@@ -1998,6 +1999,8 @@ function renderL2() {
   ctx.clearRect(0, 0, W, H);
   for (let i = 0; i < L2BG.length; i++) l2Layer(L2BG[i], L2PAR[i]);
   const cx = Math.round(l2cam);
+  for (const [k, x] of L2LV.backProps) if (FR[k] && x - cx > -120 && x - cx < W + 10) { const f = FR[k][0], sc = .62;   // set back from the road: smaller + a touch darker
+    ctx.save(); ctx.globalAlpha = .9; spr(k, 0, x - cx, GY - 6 - Math.round(f.h * sc), false, 'tl', .9, sc); ctx.restore(); ctx.globalAlpha = 1; }
   if (FR.road) { const rw = FR.road[0].w;                                                          // the race road: START line at the lighter, FINISH at the end
     for (let x = Math.floor(cx / rw) * rw; x < cx + W; x += rw) spr('road', 0, x - cx, GY, false, 'tl');
     const sx = 100 - Math.round(FR.road_start[0].w * .405), fx = L2.ENDX - Math.round(FR.road_finish[0].w * .405);
@@ -2463,7 +2466,7 @@ function startRussel(retry) {
   l3entered = keep;
   P3 = newP3(retry ? 110 : -20); P3.y = FY; P3.chick = keep.chick; P3.ammo = keep.ammo;
   proj3 = []; flutes3 = []; fx3 = []; txt3 = [];
-  BOSS = { ph: retry ? 'fight' : 'enter', t: 0, line: 0, ch: 0, x: 360, y: FY, dir: -1, hp: 6, st: 'walk', at: 0, tm: 0, cd: 1.2, flash: 0, kv: 0, ko: 0, fade: retry ? 0 : 1, flops: 0, nextFlop: 2, jy: 0 };
+  BOSS = { ph: retry ? 'fight' : 'enter', t: 0, line: 0, ch: 0, x: 360, y: FY, dir: -1, hp: 10, st: 'walk', at: 0, tm: 0, cd: 1.2, flash: 0, kv: 0, ko: 0, fade: retry ? 0 : 1, flops: 0, nextFlop: 2, jy: 0 };
   gas3 = [];
   state = 'l3boss';
 }
@@ -2471,7 +2474,10 @@ let gas3 = [];
 const rusBox = () => ({ l: BOSS.x - 16, r: BOSS.x + 16, t: BOSS.y - 66 - BOSS.jy, b: BOSS.y - BOSS.jy });
 function hitRussel(dir, drum) {
   const B = BOSS; if (B.flash > 0 || B.ph !== 'fight') return;
-  const winded = B.st === 'flat'; B.hp -= 1; B.flash = .5; B.kv = winded ? 0 : (dir || 1) * 140; SFX.stomp();
+  const winded = B.st === 'flat';
+  if (!winded) { B.flash = .25; if (clock - (B.boingT || -9) > .5) { B.boingT = clock; say3(['BOING!', 'TOO BOUNCY!', 'WAIT FOR THE FLOP!'][Math.floor(Math.random() * 3)], B.x, B.y - 90, '#c8b070'); }   // only hurt after a belly flop
+    sfx(180, 420, .12, 'triangle', .05); if (!drum && Math.abs(P3.x - B.x) < 70) P3.vx = -(dir || 1) * 160; return; }
+  B.hp -= 1; B.flash = .5; B.kv = winded ? 0 : (dir || 1) * 140; SFX.stomp();
   for (let i = 0; i < 10; i++) fx3.push({ k: 'splat', x: B.x - (dir || 1) * 4, y: B.y - 58, vx: (Math.random() - .5) * 110 + (dir || 1) * 30, vy: -50 - Math.random() * 90, t: 0, life: .7 });
   if (drum) fx3.push({ k: 'drumbounce', x: B.x, y: B.y - 58, vx: -(dir || 1) * 60, vy: -160, t: 0, life: .8 });
   if (B.hp <= 0) { B.ph = 'ko'; B.t = 0; B.kv = (dir || 1) * 90; SFX.win(); for (const f of flutes3) f.done = true; say3('RUSSEL CROWGAN IS DOWN!', B.x, B.y - 96, '#ffe27a'); }
@@ -2511,7 +2517,7 @@ function updateRussel(dt) {
     if (k >= 1) { B.jy = 0; B.st = 'flat'; B.at = 0; B.flops++; SFX.stomp(); sfx(80, 30, .7, 'sawtooth', .09); sfx(140, 60, .9, 'square', .05);
       gas3.push({ x: B.x, t: 0 }); say3('PFFFRRRT!', B.x, B.y - 40, '#9be22a');                      // every flop is a smelly one (each cloud fades away)
       if (Math.abs(P3.x - B.x) < 30 && Math.abs(P3.y - FY) < 10) { hurt3(B.x, 2); P3.squash = .8; say3('SQUASHED!', P3.x, P3.y - 40, '#ff5ac8'); } } }
-  else if (B.st === 'flat') { B.at += dt; if (B.at > 1.6) { B.st = 'rise'; B.at = 0; } }                     // winded: the best time to hit him
+  else if (B.st === 'flat') { B.at += dt; if (B.wflop !== B.flops) { B.wflop = B.flops; say3('WINDED! HIT HIM!', B.x, B.y - 70, '#9cff7a'); } if (B.at > 2.2) { B.st = 'rise'; B.at = 0; } }   // winded: the ONLY time you can hurt him
   else if (B.st === 'rise') { B.at += dt;
     if (B.at > .1 && !B.said && B.flops === 1) { B.said = true; say3('ARE YOU NOT ENTERTAINED?!', B.x, B.y - 96, '#ffe27a'); sfx(300, 200, .6, 'sawtooth', .03); }
     if (B.at > 1.3) { B.st = 'walk'; B.cd = .8; } }
@@ -2520,7 +2526,7 @@ function updateRussel(dt) {
     if (B.at > .55 && !B.thrown) { B.thrown = true; sfx(600, 300, .2, 'triangle', .05);
       const T = 1.0, tx = P3.x + P3.vx * .5, sx = B.x + B.dir * 18, sy = B.y - 56;
       flutes3.push({ x: sx, y: sy, vx: (tx - sx) / T, vy: (FY - 4 - sy - .5 * 600 * T * T) / T, r: 0 }); }
-    if (B.at > .85) { B.st = 'walk'; B.cd = 1.1 + Math.random() * .8 - (6 - B.hp) * .07; }
+    if (B.at > .85) { B.st = 'walk'; B.cd = 1.1 + Math.random() * .8 - (10 - B.hp) * .045; }
   }
   for (const g of gas3) { g.t += dt; const sp = Math.min(1, g.t / .6) * 70;            // the green gas rolls out both ways, hurts while it's thick
     if (g.t > .1 && g.t < 1.2 && Math.abs(P3.x - g.x) < sp && P3.y > FY - 22) hurt3(g.x, 1); }
@@ -3203,6 +3209,8 @@ function hMad(dt) {
   M.t += dt;
   if (M.mode === 'intro') {                                       // chases from behind on his bed... Mark pulls away and he drops off the back of the screen
     M.x += M.vx * dt; M.vx = Math.max(110, M.vx - 18 * dt); const r0 = HSURF[0]; M.y = r0.y(Math.min(r0.rr, M.x)); M.ang = Math.atan(railSlope(r0.r, Math.min(r0.rr, M.x)));
+    if (HP.vy > 0 && !HP.surf && Math.abs(M.x - HP.x) < 40 && HP.y < M.y - 4 && HP.y > M.y - 70) { M.mode = 'ko'; M.vx = 120; M.vy = -200; HP.vy = HS.JUMP * .85; HP.jumped = .35;   // he can be stomped in the chase too
+      hosSay('BOING!', M.x, M.y - 60, '#9cff7a'); pickCnt += 3; SFX.stomp(); SFX.jump(); return; }
     if (M.x < hcam - 70 || M.x > r0.rr - 4) M.gone = true; return; }
   if (M.mode === 'ko') { M.x += M.vx * dt; M.vy += 700 * dt; M.y += M.vy * dt; M.ang += dt * 6; if (M.y > H + 60) { M.gone = true; hosSay('SPLAAASH!', M.x, H - 30, '#9ad0ff', true); } return; }
   const r = M.r; M.x -= 175 * dt;                                 // head-on: rides the rail towards you
@@ -3210,7 +3218,7 @@ function hMad(dt) {
   M.y = railY(r, M.x); M.ang = Math.atan(railSlope(r, M.x));
   if (!M.threw && M.t > .5 && M.x < hcam + W - 20) { M.threw = true; hpans.push({ x: M.x - 14, y: M.y - 34, vx: -150, vy: -170, t: 0, spin: 0 }); sfx(700, 400, .12, 'triangle', .05); }
   const dx = Math.abs(M.x - HP.x);
-  if (dx < 26 && !HP.surf && HP.vy > 0 && HP.y < M.y - 6 && HP.y > M.y - 50) {   // bounce on him
+  if (dx < 40 && !HP.surf && HP.vy > 0 && HP.y < M.y - 4 && HP.y > M.y - 70) {   // bounce on him (a fair-sized stomp zone now)
     M.mode = 'ko'; M.vx = -120; M.vy = -200; HP.vy = HS.JUMP * .85; HP.jumped = .35; hosSay('BOING!', M.x, M.y - 60, '#9cff7a'); pickCnt += 3; SFX.stomp(); SFX.jump(); return; }
   if (!M.hit && dx < 20 && Math.abs(M.y - HP.y) < 22) { M.hit = true; hHurt('RAMMED!'); }
 }
@@ -4050,7 +4058,7 @@ function drawHelga(cy) {
    ===================================================================== */
 const L5_STATES = ['l5', 'l5over', 'l5done'];
 const SCROLL5 = 95, L5_END = 86, L5_CP = 40;
-let puffs5 = [], spd5 = 95, vineEnd5 = 1e9, L5IMG = {}, CP5, heads5, warn5, picks5, fx5, txt5, l5t = 0, run5 = 0, cam5 = 0, OPEN5 = null, END5 = null, cp5 = false, dodged5 = 0, l5pickStart = 0, waveI5 = 0, charge5 = 100, shake5 = 0, flare5 = 0;
+let shots5 = [], puffs5 = [], spd5 = 95, vineEnd5 = 1e9, L5IMG = {}, CP5, heads5, warn5, picks5, fx5, txt5, l5t = 0, run5 = 0, cam5 = 0, OPEN5 = null, END5 = null, cp5 = false, dodged5 = 0, l5pickStart = 0, waveI5 = 0, charge5 = 100, shake5 = 0, flare5 = 0;
 
 /* ---------- the run: [seconds, spawner] ---------- */
 const WAVES5 = [
@@ -4067,9 +4075,12 @@ const WAVES5 = [
   [56, () => pinkBurst5(3)], [61, () => pinkPair5()], [63.5, () => pink5()], [66, () => pinkBurst5(2)], [69, () => pink5()],
   [72, () => pinkPair5()], [75, () => pink5()], [78.2, () => pinkBurst5(2)],
   [80.5, () => pinkStorm5()],
+  // v45: you can shoot now, so a few extra blue / green waves to keep it honest
+  [19.5, () => blue5(105)], [37.6, () => green5(4, 2.6)], [49.5, () => blue5(170)], [57, () => blue5(70, 60)], [64.6, () => blue5(95)], [71.6, () => green5(4)],
 ].sort((a, b) => a[0] - b[0]);
-function blue5(y, dx = 0) { for (let i = 0; i < 3; i++) heads5.push({ k: 'blue', x: W + 24 + dx + i * 38, by: y, ph: i * .7, vx: -78, t: 0 }); flare5 = .6; }
-function green5(n, f = 2.2) { for (let i = 0; i < n; i++) heads5.push({ k: 'green', x: W + 24 + i * 48, by: 135, amp: 80, f, ph: i * .75, vx: -92, t: 0 }); flare5 = .8; }
+function blue5(y, dx = 0) { for (let i = 0; i < 3; i++) heads5.push({ k: 'blue', x: W + 24 + dx + i * 38, by: y, ph: i * .7, vx: -78, t: 0, hp: 1 }); flare5 = .6; }
+function green5(n, f = 2.2) { n = Math.max(2, n - 1);                   // one fewer per group + wider gaps + a smaller wave: always a way through
+  for (let i = 0; i < n; i++) heads5.push({ k: 'green', x: W + 24 + i * 66, by: 135, amp: 68, f, ph: i * .75, vx: -92, t: 0, hp: 2 }); flare5 = .8; }
 function pink5(y, warnT) { warn5.push({ y: Math.max(28, Math.min(H - 28, y == null ? CP5.y : y)), t: 0, w: warnT || (run5 > 40 ? .55 : .75) }); sfx(1400, 1400, .08, 'square', .03); flare5 = 1; }
 function pinkBurst5(n) { for (let i = 0; i < n; i++) setTimeout(() => { if (state === 'l5' && CP5) pink5(); }, i * 350); }   // aimed at you, one after another
 function pinkPair5() { const y = CP5.y, o = y < H / 2 ? 70 : -70; pink5(y); pink5(y + o); }                          // two lanes at once - find the gap
@@ -4085,7 +4096,7 @@ function beginLevel5() { l5pickStart = pickCnt; cp5 = false; dodged5 = 0; resetL
 const CH0 = 45, CH1 = 6;                                 // the cat food's charge - only minutes left
 function resetL5(from) {
   CP5 = { x: 110, y: 135, vx: 0, vy: 0, hp: MAXHP, inv: from ? 1.5 : 0, t: 0, dead: 0, rot: 0 };
-  heads5 = []; warn5 = []; picks5 = []; fx5 = []; txt5 = []; puffs5 = []; END5 = null;
+  heads5 = []; warn5 = []; shots5 = []; picks5 = []; fx5 = []; txt5 = []; puffs5 = []; END5 = null;
   run5 = from; waveI5 = WAVES5.findIndex(w => w[0] >= from); if (waveI5 < 0) waveI5 = WAVES5.length;
   charge5 = CH0 - from / L5_END * (CH0 - CH1); shake5 = 0; spd5 = SCROLL5; vineEnd5 = 1e9;
 }
@@ -4147,6 +4158,15 @@ function updateL5(dt) {
   for (const [a, k] of [[ax / n, 'vx'], [ay / n, 'vy']]) { if (a) CP5[k] += a * 1200 * dt; else { const f = 900 * dt; CP5[k] = Math.abs(CP5[k]) <= f ? 0 : CP5[k] - Math.sign(CP5[k]) * f; }
     CP5[k] = Math.max(-MAX, Math.min(MAX, CP5[k])); }
   CP5.x = Math.max(36, Math.min(W - 36, CP5.x + CP5.vx * dt)); CP5.y = Math.max(28, Math.min(H - 24, CP5.y + CP5.vy * dt)); CP5.inv = Math.max(0, CP5.inv - dt);
+  CP5.fcd = Math.max(0, (CP5.fcd || 0) - dt);
+  if (down('Space', ...MELEE) && CP5.fcd <= 0 && !CP5.dead) { CP5.fcd = .3; shots5.push({ x: CP5.x + 26, y: CP5.y - 6, t: 0 }); if (!playSmp('swing', .25, 1.4)) sfx(900, 1500, .08, 'square', .03); }   // staff sparks: hold to keep firing
+  for (const z of shots5) { z.t += dt; z.x += 430 * dt;
+    for (const h of heads5) if (!h.gone && h.k !== 'pink' && Math.abs(h.x - z.x) < 14 && Math.abs(h.y - z.y) < 14) { z.hit = true; h.hp = (h.hp || 1) - 1; h.flash = .15;
+      for (let i = 0; i < 5; i++) puffs5.push({ x: z.x, y: z.y, vx: (Math.random() - .5) * 120, vy: (Math.random() - .5) * 120, t: 0, life: .35 });
+      if (h.hp <= 0) { h.gone = true; h.shot = true; addPick(); addPick(); txt5.push({ s: '+2', x: h.x, y: h.y - 14, t: 0, col: '#ffe27a' }); sfx(400, 1300, .18, 'triangle', .05);
+        for (let i = 0; i < 12; i++) puffs5.push({ x: h.x, y: h.y, vx: (Math.random() - .5) * 220, vy: (Math.random() - .5) * 220, t: 0, life: .55 }); } else sfx(300, 500, .06, 'square', .03);
+      break; } }
+  shots5 = shots5.filter(z => !z.hit && z.x < W + 20);
   updateHeads5(dt);
   // picks
   const b = cpBox();
@@ -4162,7 +4182,7 @@ function updateHeads5(dt) {
   for (const h of heads5) { h.t += dt; h.x += h.vx * dt; h.y = headPos(h); trail5(h);
     const b = cpBox(), cx = Math.max(b.l, Math.min(b.r, h.x)), cy = Math.max(b.t, Math.min(b.b, h.y));
     if (Math.hypot(h.x - cx, h.y - cy) < 12 && !CP5.dead) hurt5(h.x);
-    if (h.x < -30) { h.gone = true; dodged5++; } }
+    h.flash = Math.max(0, (h.flash || 0) - dt); if (h.x < -30) { h.gone = true; dodged5++; } }
   heads5 = heads5.filter(h => !h.gone);
 }
 /* ---------- the Aurora's tails: glowing comet smoke (blue / green), a laser streak (fast pink) ---------- */
@@ -4252,7 +4272,8 @@ function renderL5() {
   ctx.restore();
   if (OPEN5 && OPEN5.head) { const h = OPEN5.head; drawTail5(h); spr('hd_pink', Math.floor(h.t * 10), h.x, h.y, false, 'c'); }
   for (const h of heads5) drawTail5(h);
-  for (const h of heads5) spr('hd_' + h.k, Math.floor(h.t * 10), h.x, h.y, false, 'c');
+  for (const h of heads5) spr('hd_' + h.k, Math.floor(h.t * 10), h.x, h.y, false, 'c', h.flash > 0 ? .45 : 1);
+  for (const z of shots5) { ctx.drawImage(glowDot('#ffe27a'), Math.round(z.x - 9), Math.round(z.y - 9), 18, 18); ctx.fillStyle = '#fff'; ctx.fillRect(Math.round(z.x - 2), Math.round(z.y - 1), 5, 3); }
   for (const w of warn5) { const pop = Math.min(1, w.t / .12), pulse = 1 + .18 * Math.max(0, Math.sin(w.t * 22));   // the pink warning sign
     ctx.fillStyle = `rgba(255,90,200,${.18 + .12 * Math.sin(w.t * 22)})`; ctx.fillRect(W - 60, Math.round(w.y) - 1, 60, 2);
     spr('warn', 0, W - 16, w.y, false, 'c', 1, pop * pulse); }
@@ -4277,7 +4298,7 @@ function renderL5() {
     if (who === 'aur') { if (OPEN5.t > .6) drawTalk4(OPEN5.head.x - 150, 26, 'AURORA AUSTRALIS', '#ff8ad8', msg, OPEN5.ch, 190); }
     else drawTalk4(CP5.x - 30, CP5.y - 76, who === 'wiz' ? 'THE WIZARD' : 'MULISH', who === 'wiz' ? '#ffe27a' : '#7ad0ff', msg, OPEN5.ch, 230);
     if (Math.floor(clock * 2) % 2) text('ENTER: NEXT', W - 8, H - 22, 7, 'rgba(200,190,230,.7)', 'right'); }
-  if (!OPEN5 && run5 < 4 && state === 'l5') text('ARROWS / WASD: FLY ANYWHERE - DODGE THE AURORA - GRAB THE PICKS', W / 2, 46, 7, '#fff', 'center');
+  if (!OPEN5 && run5 < 6 && state === 'l5') text(PADUSE ? 'STICK: FLY   A: SHOOT (HOLD)   PINKS CAN\'T BE SHOT - DODGE!' : TOUCH ? 'JOYSTICK: FLY   FIRE: SHOOT   DODGE THE PINKS!' : 'ARROWS: FLY   X / SPACE: SHOOT (HOLD)   PINKS CAN\'T BE SHOT - DODGE!', W / 2, 46, 7, '#fff', 'center');
   if (END5 && END5.ph === 'talk') drawTalk4(CP5.x - 40, Math.max(28, CP5.y - 70), 'THE WIZARD', '#ffe27a', WILLUNGA_LINE, END5.ch, 200);
   if (END5 && END5.ph === 'fade') { ctx.fillStyle = `rgba(0,0,0,${Math.min(1, END5.tt / 1.1)})`; ctx.fillRect(0, 0, W, H); }
   if (state === 'l5over') banner('GAME OVER', cp5 ? 'ENTER / TAP: BACK TO DOUGSTOCK    R: RESTART LEVEL 5' : 'ENTER / TAP: FLY AGAIN');
@@ -4384,16 +4405,24 @@ function hurtKnight(fromX, amt = 1, big = false) {
   if (FIN.round === 1 && KN.hp <= 1) setTimeout(() => { if (FIN && FIN.ph === 'fight' && FIN.round === 1) finalBlast(); }, 900);
   if (FIN.round === 2 && KN.hp <= 0) { FIN.ph = 'lost'; FIN.endT = 0; KN.st = 'ko'; KN.down = 0; }
 }
+function gusCool(kind, base) {                                // after every move: an obvious, punishable cooldown (shorter in round 2 / rage)
+  const G = GW; G.st = 'cool'; G.cool = kind; G.at = 0; G.kv = 0; G.shots = 0;
+  G.coolT = base * (FIN.round === 2 ? .9 : 1) * (G.rage ? .7 : 1);
+  finSay(kind === 'dizzy' ? 'DIZZY!' : kind === 'stuck' ? 'STAFF STUCK!' : 'RECHARGING!', G.x, G.y - 104, '#9cff7a'); }
 function hitGus(dmg, dir, ranged) {
   const G = GW; if (G.flash > 0 || FIN.ph !== 'fight' || G.st === 'roar') return;
   if (G.st === 'dash') { sfx(1400, 900, .07, 'square', .04); finSay('CLANG!', G.x, G.y - 96, '#7ad0ff'); return; }
-  G.hp = Math.max(FIN.round === 1 ? 6 : 0, G.hp - dmg); G.flash = .35; G.kv = dir * 120; SFX.stomp(); finBurst(G.x - dir * 6, G.y - 46);
+  if (FIN.ph === 'fight' && G.st !== 'cool' && G.st !== 'hurt') {             // MOVE THEN COOLDOWN: outside his cooldowns the staff blocks everything
+    G.flash = .12; sfx(1500, 1000, .06, 'square', .04); if (FIN.t - (G.blockT || -9) > .6) { G.blockT = FIN.t; finSay('BLOCKED!', G.x, G.y - 96, '#7ad0ff'); }
+    if (!ranged) { KN.vx = -dir * 160; KN.st = KN.st === 'block' ? 'block' : KN.st; } return; }
+  if (G.st === 'cool') dmg = G.cool === 'dizzy' ? dmg * 2 : Math.ceil(dmg * 1.5);   // punishing a cooldown hits hard (dizzy = double)
+  G.hp = Math.max(FIN.round === 1 ? 6 : 0, G.hp - dmg); G.flash = .3; G.kv = dir * 120; SFX.stomp(); finBurst(G.x - dir * 6, G.y - 46);
   G.chain = (G.lastHit && FIN.t - G.lastHit < 1.3 ? (G.chain || 0) : 0) + 1; G.lastHit = FIN.t;
   if (FIN.round === 1 && G.hp <= 6) { setTimeout(() => finalBlast(), 400); return; }   // worn down: now he gets serious
   if (FIN.round === 2 && G.hp <= 4) { startFinisher(); return; }
   if (FIN.round === 2 && !G.rage && G.hp <= G.max / 2) { startRage(); return; }
-  if (G.chain >= (G.rage ? 2 : 3)) { G.chain = 0; G.st = G.rage ? ['fish', 'slam', 'rbeam'][Math.floor(Math.random() * 3)] : 'power'; G.at = 0; G.hit = false; finSay('ENOUGH!', G.x, G.y - 100, '#ffb050'); return; }   // no stunlocking a god
-  if (!['beam', 'power', 'pound', 'final', 'fish', 'slam', 'rbeam'].includes(G.st) && !(G.rage && Math.random() < .5) && !(ranged && (G.rage || Math.random() < .6))) { G.st = 'hurt'; G.at = 0; }   // raging, he shrugs off half the hits
+  if (G.st !== 'cool' && G.chain >= (G.rage ? 2 : 3)) { G.chain = 0; G.st = G.rage ? ['fish', 'slam', 'rbeam'][Math.floor(Math.random() * 3)] : 'power'; G.at = 0; G.hit = false; finSay('ENOUGH!', G.x, G.y - 100, '#ffb050'); return; }   // no stunlocking a god
+  if (G.st === 'cool') { G.kv = dir * 50; return; }                     // he's open: hits land, he stays open until the cooldown runs out
 }
 function finalBlast() {                                   // the scripted loss: nothing can stop this one
   if (FIN.ph !== 'fight' || FIN.round !== 1) return;
@@ -4465,47 +4494,55 @@ function updateGus(dt) {
   if (G.st === 'hurt') { G.x += G.kv * dt; G.kv *= Math.pow(.05, dt); if (G.at > .35) { G.st = 'walk'; G.at = 0; G.cd = Math.min(G.cd, .5); } }
   else if (G.st === 'walk') {
     G.dir = Math.sign(dx) || G.dir;
-    const want = dist > 70 ? 1 : dist < 46 ? -1 : 0, R2 = FIN.round === 2; G.x += want * G.dir * (G.rage ? 88 : R2 ? 68 : 52) * dt;
+    const R2 = FIN.round === 2, want = dist > (R2 ? 145 : 165) ? 1 : dist < (R2 ? 95 : 110) ? -1 : 0;           // keeps his distance (2-3 bodies away) - no more crowding you
+    G.x += want * G.dir * (G.rage ? 88 : R2 ? 68 : 52) * dt; G.x = Math.max(fxL(G.y) + 24, Math.min(fxR(G.y) - 24, G.x));
     G.y += Math.sign(dy) * Math.min(Math.abs(dy), 40 * dt);
     G.cd -= dt;
     if (G.cd <= 0 && FIN.ph === 'fight') { G.at = 0; G.hit = false;
       const r = Math.random(), F = formOf();
-      if (G.rage && r < .6) G.st = ['fish', 'slam', 'rbeam', F === 'rc' ? 'slam' : F === 'k' ? 'dash1' : 'fish'][Math.floor(Math.random() * 4)];   // the nasty new stuff
-      else if (dist < 56 && Math.abs(dy) < 14) G.st = 'swipe';
-      else if (F === 'rc' && r < .5) G.st = 'power';                                // raincoat fight: shockwaves to float over
-      else if (F === 'k' && r < .5) G.st = 'dash1';                                 // drumstick fight: he rushes you down
-      else if (r < .34 && dist > 70) { G.st = 'beam'; G.tgt = KR && !KR.box && Math.random() < .4 ? 'kr' : 'kn'; }
-      else if (r < .67) G.st = 'dash1';
-      else G.st = 'power'; } }
+      G.shots = 0;                                                                   // mostly SHOOTING + HITTING, the rush now and then
+      if (G.rage && r < .45) G.st = ['fish', 'rbeam', 'slam'][Math.floor(Math.random() * 3)];        // the bigger shots when he rages
+      else if (r < .45) { G.st = 'beam'; G.tgt = KR && !KR.box && Math.random() < .3 ? 'kr' : 'kn'; }
+      else if (r < .85 || F === 'k' && r < .9) { G.st = 'stepin'; G.missed = true; }
+      else G.st = 'dash1'; } }
+  else if (G.st === 'stepin') { G.dir = Math.sign(dx) || G.dir; G.x += G.dir * 150 * dt; G.y += Math.sign(dy) * Math.min(Math.abs(dy), 50 * dt);   // steps in for a telegraphed swipe
+    if ((dist < 52 && Math.abs(dy) < 16) || G.at > .9) { G.st = 'swipe'; G.at = 0; G.hit = false; } }
+  else if (G.st === 'cool') { G.x = Math.max(fxL(G.y) + 20, Math.min(fxR(G.y) - 20, G.x + G.kv * dt)); G.kv *= Math.pow(.05, dt);
+    if (G.cool === 'dizzy' && Math.random() < dt * 6) finFx.push({ k: 'spark', x: G.x + (Math.random() - .5) * 40, y: G.y - 96, vx: 0, vy: -20, t: 0, life: .4, col: '#ffe27a' });
+    if (G.cool === 'recharge' && Math.random() < dt * 14) finFx.push({ k: 'spark', x: G.x + G.dir * 22 + (Math.random() - .5) * 10, y: G.y - 70 - Math.random() * 20, vx: 0, vy: -60, t: 0, life: .4, col: '#7ad0ff' });
+    if (G.at > G.coolT) { G.st = 'walk'; G.at = 0; G.cd = G.rage ? .3 : FIN.round === 2 ? .45 : .7;
+      if (Math.abs(dx) < 90) G.kv = -Math.sign(dx) * 160; } }      // hops back out after
   else if (G.st === 'roar') { if (G.at > .2 && G.at < 1.2 && Math.random() < dt * 30) finFx.push({ k: 'spark', x: G.x + (Math.random() - .5) * 70, y: G.y - Math.random() * 90, vx: 0, vy: -120 - Math.random() * 100, t: 0, life: .5, col: '#ffd23a' });
     if (G.at > 1.6) { G.st = 'walk'; G.at = 0; G.cd = .5; } }
   else if (G.st === 'fish') { G.dir = Math.sign(dx) || G.dir;                          // pufferfish barrage: they land round you, puff up, and blow
     if (G.at > .45 && !G.hit) { G.hit = true; sfx(900, 300, .3, 'square', .05); FIN.shake = .15; const n = 4 + (Math.random() < .5 ? 1 : 0);
       for (let i = 0; i < n; i++) { const tx = Math.max(fxL(K.y) + 14, Math.min(fxR(K.y) - 14, K.x + (i - (n - 1) / 2) * 34 + (Math.random() - .5) * 14)), ty = Math.max(FYB + 6, Math.min(FYF - 4, K.y + (Math.random() - .5) * 40));
         FIN.puffs.push({ sx: G.x + G.dir * 30, sy: G.y - 50, x: tx, y: ty, t: -i * .08, fuse: 1.5 + Math.random() * .4 }); } }
-    if (G.at > 1.1) { G.st = 'flex'; G.at = .9; } }
+    if (G.at > 1.1) gusCool('recharge', 1.3); }
   else if (G.st === 'slam') {                                                          // leaps at you, smashes the bed, gold shockwave + rocks
     if (G.at < .55) { G.dir = Math.sign(dx) || G.dir; const tx = K.x - G.dir * 26; G.x += (tx - G.x) * Math.min(1, dt * 4); G.y += (K.y - G.y) * Math.min(1, dt * 4); }
     if (G.at > .62 && !G.hit) { G.hit = true; G.wave = { x: G.x + G.dir * 20, y: G.y, r: 10 }; SFX.stomp(); sfx(50, 25, .7, 'sawtooth', .09); FIN.shake = .6;
       if (Math.abs(K.x - G.x - G.dir * 20) < 34 && Math.abs(K.y - G.y) < 14 && K.z < 20) hurtKnight(G.x, 2, true);
       for (let i = 0; i < 14; i++) finFx.push({ k: 'rock', x: G.x + G.dir * 20, y: G.y - 4, vx: (Math.random() - .5) * 220, vy: -80 - Math.random() * 160, t: 0, life: .8 }); }
-    if (G.at > 1.25) { G.st = 'flex'; G.at = 1; } }
+    if (G.at > 1.25) gusCool('dizzy', 1.4); }
   else if (G.st === 'rbeam') { G.dir = Math.sign(dx) || G.dir; if (G.at < .7) G.y += Math.sign(dy) * Math.min(Math.abs(dy), 55 * dt);   // the big charged beam
     if (G.at > .95 && !G.beam && !G.hit) { G.hit = true; G.beam = { x0: G.x + G.dir * 48 * fsc(G.y), y: G.y, dir: G.dir, t: 0, big: true, h: 42 }; sfx(1400, 120, .9, 'sawtooth', .09); FIN.shake = .4; FIN.flash = .3; }
-    if (G.at > 1.6) { G.st = 'flex'; G.at = 1; } }
-  else if (G.st === 'swipe') { if (G.at > (G.rage ? .22 : .3) && !G.hit) { G.hit = true; sfx(200, 80, .15, 'square', .06); if (Math.abs(K.y - G.y) < 14 && Math.sign(dx) === G.dir && dist < 70 && K.z < 30) hurtKnight(G.x, G.rage ? 2 : 1); } if (G.at > .6) { G.st = 'walk'; G.at = 0; G.cd = FIN.round === 2 ? (G.rage ? .3 : .6) : 1; } }
+    if (G.at > 1.6) gusCool('recharge', 1.4); }
+  else if (G.st === 'swipe') { if (G.at > (G.rage ? .32 : .42) && !G.hit) { G.hit = true; sfx(200, 80, .15, 'square', .06); if (Math.abs(K.y - G.y) < 14 && Math.sign(dx) === G.dir && dist < 70 && K.z < 30) { G.missed = false; hurtKnight(G.x, G.rage ? 2 : 1); } }
+    if (G.at > .6 && G.hit) { gusCool(G.missed ? 'stuck' : 'recharge', G.missed ? 1.3 : .7); } if (G.at > .6) { G.st = 'walk'; G.at = 0; G.cd = FIN.round === 2 ? (G.rage ? .3 : .6) : 1; } }
   else if (G.st === 'beam') { const T = G.tgt === 'kr' && KR ? KR : K; G.dir = Math.sign(T.x - G.x) || G.dir; if (G.at < .8) G.y += Math.sign(T.y - G.y) * Math.min(Math.abs(T.y - G.y), 45 * dt);
     if (G.at > (FIN.round === 2 ? .7 : .9) && !G.beam && !G.hit) { G.hit = true; G.beam = { x0: G.x + G.dir * 26, y: G.y, dir: G.dir, t: 0 }; sfx(1200, 200, .7, 'sawtooth', .07); FIN.shake = .2; }
-    if (G.at > 1.7) { G.st = 'flex'; G.at = 0; } }
+    if (G.at > 1.5 && FIN.ph !== 'fight') { G.st = 'flex'; G.at = 0; }
+    else if (G.at > 1.5) { G.shots = (G.shots || 0) + 1; if (G.shots < (G.rage ? 3 : 2)) { G.st = 'beam'; G.at = .1; G.hit = false; G.beam = null; } else gusCool('recharge', 1.6); } }
   else if (G.st === 'dash1') { G.dir = Math.sign(dx) || G.dir; G.y += Math.sign(dy) * Math.min(Math.abs(dy), 30 * dt); if (G.at > .45) { G.st = 'dash'; G.at = 0; G.hit = false; sfx(90, 300, .4, 'sawtooth', .05); } }
   else if (G.st === 'dash') { G.x += G.dir * 270 * dt;
     if (Math.random() < dt * 20) finFx.push({ k: 'dust', x: G.x - G.dir * 20, y: G.y, t: 0, life: .35 });
     if (!G.hit && Math.abs(K.y - G.y) < 12 && Math.abs(K.x - G.x) < 26 && K.z < 30) { G.hit = true; hurtKnight(G.x, 1, true); }
     if (KR && !KR.box && Math.abs(KR.y - G.y) < 12 && Math.abs(KR.x - G.x) < 26) dizzyKR();
-    if (G.at > .9 || G.x < fxL(G.y) + 20 || G.x > fxR(G.y) - 20) { G.x = Math.max(fxL(G.y) + 20, Math.min(fxR(G.y) - 20, G.x)); G.st = 'flex'; G.at = 0; } }
+    if (G.at > .9 || G.x < fxL(G.y) + 20 || G.x > fxR(G.y) - 20) { G.x = Math.max(fxL(G.y) + 20, Math.min(fxR(G.y) - 20, G.x)); FIN.shake = .25; SFX.stomp(); gusCool('dizzy', 2); } }
   else if (G.st === 'power') { if (G.at > .7 && !G.hit && FIN.ph === 'fight') { G.hit = true; G.st = 'pound'; G.at = 0; G.wave = { x: G.x, y: G.y, r: 10 }; SFX.stomp(); sfx(60, 30, .6, 'sawtooth', .08); FIN.shake = .4; }
     if (FIN.ph === 'final') { FIN.flash = Math.random() < .2 ? .5 : FIN.flash; if (G.at > 1.8) { G.st = 'beam'; G.at = 1; G.hit = true; G.dir = Math.sign(dx) || G.dir; G.beam = { x0: G.x + G.dir * 26, y: G.y, dir: G.dir, t: 0, all: true }; FIN.flash = 1; FIN.shake = 1; sfx(1600, 60, 1.4, 'sawtooth', .09); } } }
-  else if (G.st === 'pound') { if (G.at > .6) { G.st = 'flex'; G.at = 0; } }
+  else if (G.st === 'pound') { if (G.at > .6) gusCool('recharge', 1.2); }
   else if (G.st === 'flex') { if (G.at > (FIN.round === 2 ? (G.rage ? 1.15 : .9) : 1.4)) { G.st = 'walk'; G.at = 0; G.cd = G.rage ? .25 + Math.random() * .35 : FIN.round === 2 ? .45 + Math.random() * .45 : .7 + Math.random() * .6; } }
   G.y = Math.max(FYB + 4, Math.min(FYF - 2, G.y)); G.x = Math.max(fxL(G.y) + 20, Math.min(fxR(G.y) - 20, G.x));
   if (FIN.ph === 'fight' && Math.abs(K.x - G.x) < 20 && Math.abs(K.y - G.y) < 8 && K.z < 20) K.x = G.x + (Math.sign(K.x - G.x) || -1) * 20;   // can't walk through him
@@ -4549,6 +4586,8 @@ function gwSprite() {
     case 'power': return ['gw_power', 0];
     case 'pound': return ['gw_pound', 0];
     case 'flex': return ['gw_flex', 0];
+    case 'stepin': return ['gw_run', Math.floor(G.t * 10)];
+    case 'cool': return G.cool === 'dizzy' ? ['gw_hurt', 1] : G.cool === 'stuck' ? ['gw_swipe', 0] : ['gw_idle', 0];
     default: return Math.abs(KN.x - G.x) > 50 ? ['gw_run', Math.floor(G.t * 8)] : ['gw_idle', 0];
   }
 }
