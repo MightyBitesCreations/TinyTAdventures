@@ -268,6 +268,12 @@ function updateOpening(dt) {
     OPEN.camX = k * 940; if (OPEN.t > 3.4) { OPEN = null; }
   }
 }
+const FADES = new Map();                                   // v50: songs fade out in a straight line instead of cutting dead when a cutscene jumps in
+function fadeOutAudio(a, secs = 1.6) {
+  try { if (!a || a.paused) return; clearInterval(FADES.get(a)); const v0 = a.volume, step = v0 / (secs * 20);
+    FADES.set(a, setInterval(() => { a.volume = Math.max(0, a.volume - step); if (a.volume <= 0) { a.pause(); clearInterval(FADES.get(a)); FADES.delete(a); } }, 50)); } catch (e) {}
+}
+function cancelFade(a) { if (a && FADES.has(a)) { clearInterval(FADES.get(a)); FADES.delete(a); } }
 function music(on) {
   try {
     if (!MUSIC) { MUSIC = new Audio(THEME_MP3); MUSIC.loop = true; }
@@ -559,7 +565,8 @@ function bgmTick(dt) {
     if (!a && target > 0) { try { a = BGM[k] = new Audio(BGM_SRC[k]); a.loop = true; a.volume = 0; } catch (e) { continue; } }
     if (!a) continue;
     if (target > 0 && a.paused) a.play().catch(() => {});
-    a.volume = Math.max(0, Math.min(1, a.volume + (target - a.volume) * Math.min(1, dt * 3)));
+    if (target < a.volume) a.volume = Math.max(target, a.volume - dt * MV / 1.6);         // v50: straight-line fade out (~1.6 s), not a near-instant drop
+    else a.volume = Math.max(0, Math.min(1, a.volume + (target - a.volume) * Math.min(1, dt * 3)));
     if (target === 0 && !a.paused && a.volume < .01) { a.pause(); a.currentTime = 0; }    // next visit starts the song from the top
   }
 }
@@ -1146,7 +1153,7 @@ const canPause = () => !PAUSE && !IS && lvOf(state) > 0 && !LV_END.includes(stat
 function openPause() { PAUSE = { sel: 0 }; PAUSED_MEDIA = [...MEDIA].filter(a => !a.paused); PAUSED_MEDIA.forEach(a => a.pause()); try { if (AC) AC.suspend(); } catch (e) {} }
 function closePause() { PAUSE = null; PAUSED_MEDIA.forEach(a => a.play().catch(() => {})); PAUSED_MEDIA = []; try { if (AC && !MUTED) AC.resume(); } catch (e) {} for (const k in keys) keys[k] = 0; }
 function quitToSelect() { PAUSE = null; PAUSED_MEDIA = []; for (const a of MEDIA) try { a.pause(); } catch (e) {}
-  try { finSongStop(); endSongStop(); hsngStop(); hmbStop(); } catch (e) {} try { if (AC && !MUTED) AC.resume(); } catch (e) {} IS = null; LT = null; music(true); openSelect(); }
+  try { finSongStop(true); endSongStop(true); hsngStop(); hmbStop(); } catch (e) {} try { if (AC && !MUTED) AC.resume(); } catch (e) {} IS = null; LT = null; music(true); openSelect(); }
 function pauseTick() {                                              // returns true while the game is frozen
   if (tapped('KeyM')) setMute(!MUTED);
   if (!PAUSE) { const tapBtn = taps.Enter && tapAt && tapAt.x >= PBTN.x - 10 && tapAt.y <= PBTN.y + PBTN.h + 8 && tapAt.y >= PBTN.y - 10;
@@ -1376,7 +1383,7 @@ function updateIntro(dt) {
     while (IS.shown < S.text.length && IS.typeT >= charDelay(S, IS.shown)) {
       IS.typeT -= charDelay(S, IS.shown); IS.shown++;
       const c = S.text[IS.shown - 1];
-      if (c !== ' ' && IS.t - (IS.blipT || -1) > .07) { IS.blipT = IS.t; sfx(S.who ? 520 : 760, S.who ? 480 : 700, .04, 'triangle', .03); }   // soft blips, max ~14 a second (one per letter garbled on the TV)
+      if (c !== ' ' && IS.t - (IS.blipT || -1) > .025) { IS.blipT = IS.t; sfx(S.who ? 520 : 760, S.who ? 480 : 700, .025, 'square', .015); }   // v50: back to the little 'dot' on every letter (only a tiny guard so super-fast text can't pile up)
       if (S.shout) { IS.shake = .25; if (c === '!') sfx(90, 50, .2, 'sawtooth', .05); }
       if (S.text.slice(0, IS.shown).endsWith('BURP!')) { IS.pop = 0; IS.shake = .35; IS.burst = .5; sfx(120, 60, .3, 'sawtooth', .07); }
       if (S.text.slice(0, IS.shown).endsWith('juiced')) { IS.burst = .8; IS.flash = .6; sfx(400, 1600, .5, 'triangle', .06); }
@@ -2858,9 +2865,9 @@ let RINT = null, chipSay = null, chipSaid = 0, rShake = 0, blasts = [];
 let RP, notes, marks, dancers, rfx, rtxt, songT = 0, rPhase = 'calm', rPhaseT = 0, rNext = 6, chipPose = 'chip_front', rEnd = 0, SONG = null;
 
 function songPlay(vol, from0) {
-  try { if (!SONG) { SONG = new Audio(SONG_MP3); } SONG.volume = vol; if (from0) SONG.currentTime = 0; if (SONG.paused) SONG.play().catch(() => {}); } catch (e) {}
+  try { if (!SONG) { SONG = new Audio(SONG_MP3); } cancelFade(SONG); SONG.volume = vol; if (from0) SONG.currentTime = 0; if (SONG.paused) SONG.play().catch(() => {}); } catch (e) {}
 }
-function songStop() { try { if (SONG) SONG.pause(); } catch (e) {} }
+function songStop() { try { if (SONG) fadeOutAudio(SONG, 1); } catch (e) {} }
 
 function startRadio(fresh) {
   if (fresh) { pickCnt = 0; bonus = 0; }
@@ -4512,10 +4519,10 @@ const FIN_LOSS_SCENES = [
 
 /* the music creeps in from the phone shot and keeps building */
 function finBuild(slam) {                              // the Big Boss Fight track: slams in with the mushroom cloud, carries both fights
-  try { if (!finSong) { finSong = new Audio(BOSS_MP3); finSong.loop = true; } if (!finSong.paused) return; finSong.currentTime = 0; finSong.volume = slam ? MV : 0; finSong.play().catch(() => {});
+  try { if (!finSong) { finSong = new Audio(BOSS_MP3); finSong.loop = true; } if (FADES.has(finSong)) { cancelFade(finSong); finSong.pause(); } if (!finSong.paused) return; finSong.currentTime = 0; finSong.volume = slam ? MV : 0; finSong.play().catch(() => {});
     clearInterval(finSongT); if (!slam) finSongT = setInterval(() => { finSong.volume = Math.min(MV, finSong.volume + .01); if (finSong.volume >= MV) clearInterval(finSongT); }, 100); } catch (e) {}
 }
-function finSongStop() { try { clearInterval(finSongT); if (finSong) finSong.pause(); } catch (e) {} }
+function finSongStop(now) { try { clearInterval(finSongT); if (finSong) { if (now) { cancelFade(finSong); finSong.pause(); } else fadeOutAudio(finSong, 1.8); } } catch (e) {} }   // v50: fades out (instant only when quitting)
 
 function startFinale(fresh) {
   if (fresh) { pickCnt = 0; bonus = 0; }
@@ -4967,8 +4974,8 @@ function gusFinishSprite() {
 
 /* ---------- the ending's song + the beach video ---------- */
 let END_SONG = null, BEACH = null;
-function endSong() { try { if (!END_SONG) END_SONG = new Audio(END_MP3); END_SONG.currentTime = 0; END_SONG.volume = MV; END_SONG.play().catch(() => {}); } catch (e) {} }
-function endSongStop() { try { if (END_SONG) END_SONG.pause(); } catch (e) {} }
+function endSong() { try { if (!END_SONG) END_SONG = new Audio(END_MP3); cancelFade(END_SONG); END_SONG.currentTime = 0; END_SONG.volume = MV; END_SONG.play().catch(() => {}); } catch (e) {} }
+function endSongStop(now) { try { if (END_SONG) { if (now) { cancelFade(END_SONG); END_SONG.pause(); } else fadeOutAudio(END_SONG, 1.6); } } catch (e) {} }
 function beachVid(on) {
   try { if (!BEACH) { BEACH = document.createElement('video'); BEACH.src = BEACH_MP4; BEACH.muted = true; BEACH.loop = false; BEACH.playsInline = true; }
     if (on) { BEACH.currentTime = 0; BEACH.play().catch(() => {}); } else BEACH.pause(); } catch (e) {}
